@@ -78,21 +78,27 @@ class ProcessedQuestion(BaseModel):
     question: str
     summary: str
 
-class SentimentAnalyser(Runnable[GameQuestion, dict]):
-    name: str = "sentiment_analyser"
-    model_version: str = "2.1-stable"
-    
-    def invoke(self, Question: GameQuestion) -> dict:
-        msg_lower = Question.question.lower()
-        
-        # Simulated NLP sentiment
-        sentiment = "negative" if "broken" in msg_lower or "angry" in msg_lower else "neutral"
-        urgency = "high" if "broken" in msg_lower or "urgent" in msg_lower else "low"
-        
+class QuestionPreprocessor(Runnable[GameQuestion, dict]):
+
+    def invoke(self, question: GameQuestion) -> dict:
+
         return {
-            "question": Question.question,
-            "summary": Question.message[:40] + "..."
+            "question": question.question,
+            "dataset_summary": question.dataset_summary,
+            "question_type": self._detect_type(question.question)
         }
+
+    def _detect_type(self, question: str) -> str:
+        question = question.lower()
+
+        if "genre" in question:
+            return "genre_analysis"
+        elif "price" in question:
+            return "price_analysis"
+        elif "release" in question:
+            return "time_analysis"
+        else:
+            return "general"
 
 class QuestionParser(Runnable[dict, ProcessedQuestion]):
     name: str = "Question_parser"
@@ -108,7 +114,7 @@ def route_Question(Question: ProcessedQuestion) -> dict:
         "Question_details": Question.model_dump()
     }
 
-question_pipeline = SentimentAnalyser() | QuestionParser() | route_Question
+question_pipeline = QuestionPreprocessor() | QuestionParser() | route_Question
 
 # the dataset is for 2025 and before.
 incoming_question = GameQuestion(
