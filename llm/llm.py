@@ -74,45 +74,41 @@ class GameQuestion(BaseModel):
     dataset_summary: dict
 
 # Strongly typed output data
-class ProcessedTicket(BaseModel):
-    customer_id: int
-    sentiment: str
-    urgency: str
+class ProcessedQuestion(BaseModel):
+    question: str
     summary: str
 
 class SentimentAnalyser(Runnable[GameQuestion, dict]):
     name: str = "sentiment_analyser"
     model_version: str = "2.1-stable"
     
-    def invoke(self, ticket: GameQuestion) -> dict:
-        msg_lower = ticket.message.lower()
+    def invoke(self, Question: GameQuestion) -> dict:
+        msg_lower = Question.question.lower()
         
         # Simulated NLP sentiment
         sentiment = "negative" if "broken" in msg_lower or "angry" in msg_lower else "neutral"
         urgency = "high" if "broken" in msg_lower or "urgent" in msg_lower else "low"
         
         return {
-            "customer_id": ticket.customer_id,
-            "sentiment": sentiment,
-            "urgency": urgency,
-            "summary": ticket.message[:40] + "..."
+            "question": Question.question,
+            "summary": Question.message[:40] + "..."
         }
 
-class TicketParser(Runnable[dict, ProcessedTicket]):
-    name: str = "ticket_parser"
+class QuestionParser(Runnable[dict, ProcessedQuestion]):
+    name: str = "Question_parser"
     
-    def invoke(self, raw_dict: dict) -> ProcessedTicket:
-        return ProcessedTicket(**raw_dict)
+    def invoke(self, raw_dict: dict) -> ProcessedQuestion:
+        return ProcessedQuestion(**raw_dict)
 
-def route_ticket(ticket: ProcessedTicket) -> dict:
-    destination = "engineering_team" if "high" in ticket.urgency else "general_support"
+def route_Question(Question: ProcessedQuestion) -> dict:
+    destination = "engineering_team" if "high" in Question.urgency else "general_support"
     return {
         "status": "routed",
         "assigned_to": destination,
-        "ticket_details": ticket.model_dump()
+        "Question_details": Question.model_dump()
     }
 
-question_pipeline = SentimentAnalyser() | TicketParser() | route_ticket
+question_pipeline = SentimentAnalyser() | QuestionParser() | route_Question
 
 # the dataset is for 2025 and before.
 incoming_question = GameQuestion(
