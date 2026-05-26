@@ -50,11 +50,28 @@ class RunnableSequence(Runnable[I, O], Generic[I, M, O]):
     
     def invoke(self, data: I) -> O:
         return self.second.invoke(self.first.invoke(data))
+    
 
-# Strongly typed input data
-class TicketInput(BaseModel):
-    customer_id: int
-    message: str
+class PromptBuilder(Runnable[GameQuestion, PromptOutput]):
+    def invoke(self, data: GameQuestion) -> PromptOutput:
+
+        prompt = f"""
+            You are a helpful Steam game data analyst.
+
+            Use ONLY this dataset summary:
+            {data.dataset_summary}
+
+            Question:
+            {data.question}
+
+            Answer clearly and with numbers when possible.
+            """
+
+        return PromptOutput(prompt=prompt)
+
+class GameQuestion(BaseModel):
+    question: str
+    dataset_summary: dict
 
 # Strongly typed output data
 class ProcessedTicket(BaseModel):
@@ -63,11 +80,11 @@ class ProcessedTicket(BaseModel):
     urgency: str
     summary: str
 
-class SentimentAnalyser(Runnable[TicketInput, dict]):
+class SentimentAnalyser(Runnable[GameQuestion, dict]):
     name: str = "sentiment_analyser"
     model_version: str = "2.1-stable"
     
-    def invoke(self, ticket: TicketInput) -> dict:
+    def invoke(self, ticket: GameQuestion) -> dict:
         msg_lower = ticket.message.lower()
         
         # Simulated NLP sentiment
@@ -97,7 +114,7 @@ def route_ticket(ticket: ProcessedTicket) -> dict:
 
 ticket_pipeline = SentimentAnalyser() | TicketParser() | route_ticket
 
-incoming_ticket = TicketInput(
+incoming_ticket = GameQuestion(
     customer_id=1337,
     message="The payment portal is broken! Urgent fix is needed ASAP!"
 )
