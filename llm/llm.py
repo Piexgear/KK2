@@ -105,16 +105,30 @@ class QuestionParser(Runnable[dict, ProcessedQuestion]):
     
     def invoke(self, raw_dict: dict) -> ProcessedQuestion:
         return ProcessedQuestion(**raw_dict)
+    
+class LLMRunner(Runnable[PromptOutput, dict]):
+
+    def __init__(self, model_name: str = "HuggingFaceTB/SmolLM2-135M-Instruct"):
+        self.model = pipeline("text-generation", model=model_name)
+
+    def invoke(self, data: PromptOutput) -> dict:
+
+        response = self.model(
+            data.prompt,
+            max_new_tokens=100,
+            temperature=0.3
+        )[0]["generated_text"]
+
+        return {"response": response}
 
 def route_Question(Question: ProcessedQuestion) -> dict:
-    destination = "engineering_team" if "high" in Question.urgency else "general_support"
     return {
         "status": "routed",
-        "assigned_to": destination,
-        "Question_details": Question.model_dump()
+        "Question_details": Question.model_dump(),
     }
 
-question_pipeline = QuestionPreprocessor() | QuestionParser() | route_Question
+question_pipeline = (QuestionPreprocessor() | QuestionParser() | PromptBuilder() | LLMRunner())
+
 
 # the dataset is for 2025 and before.
 incoming_question = GameQuestion(
