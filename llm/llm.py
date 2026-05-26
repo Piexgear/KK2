@@ -112,11 +112,12 @@ def route_ticket(ticket: ProcessedTicket) -> dict:
         "ticket_details": ticket.model_dump()
     }
 
-ticket_pipeline = SentimentAnalyser() | TicketParser() | route_ticket
+question_pipeline = SentimentAnalyser() | TicketParser() | route_ticket
 
-incoming_ticket = GameQuestion(
-    customer_id=1337,
-    message="The payment portal is broken! Urgent fix is needed ASAP!"
+# the dataset is for 2025 and before.
+incoming_question = GameQuestion(
+    question="What is the latest games",
+    dataset_summary={"Name": "Game A", "Release Year": 2025, "Genre": "*"}
 )
 
-# final_output = ticket_pipeline.invoke(incoming_ticket)
+# final_output = question_pipeline.invoke(incoming_question)
