@@ -59,16 +59,17 @@ class GameQuestion(BaseModel):
     dataset_summary: dict
 
 
-class PromptOutput():
-    quest: str # this is just a placeholder so its not red everywhere 
+class PromptOutput(BaseModel):
+    prompt: str
 
 
 class ProcessedQuestion(BaseModel):
     question: str
-    answer: str
+    dataset_summary: dict
+    question_type: str
 
 
-class QuestionPreprocessor(Runnable[GameQuestion, dict]):
+class QuestionPreprocessor(Runnable[ProcessedQuestion, dict]):
 
     def invoke(self, question: GameQuestion) -> dict:
 
