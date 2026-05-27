@@ -148,3 +148,6 @@ incoming_question = GameQuestion(
     question="What is the latest games",
     dataset_summary={"Name": "Game A", "Release Year": 2025, "Genre": "*"}
 )
+
+
+result = question_pipeline.invoke(incoming_question) # the result that will get sent with fastapi
