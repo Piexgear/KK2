@@ -50,33 +50,23 @@ class RunnableSequence(Runnable[I, O], Generic[I, M, O]):
     
     def invoke(self, data: I) -> O:
         return self.second.invoke(self.first.invoke(data))
-    
 
-class PromptBuilder(Runnable[GameQuestion, PromptOutput]):
-    def invoke(self, data: GameQuestion) -> PromptOutput:
 
-        prompt = f"""
-            You are a helpful Steam game data analyst.
-
-            Use ONLY this dataset summary:
-            {data.dataset_summary}
-
-            Question:
-            {data.question}
-
-            Answer clearly and with numbers when possible.
-            """
-
-        return PromptOutput(prompt=prompt)
+#==============================================================================================#
 
 class GameQuestion(BaseModel):
     question: str
     dataset_summary: dict
 
-# Strongly typed output data
+
+class PromptOutput():
+    quest: str # this is just a placeholder so its not red everywhere 
+
+
 class ProcessedQuestion(BaseModel):
     question: str
-    summary: str
+    answer: str
+
 
 class QuestionPreprocessor(Runnable[GameQuestion, dict]):
 
@@ -100,12 +90,32 @@ class QuestionPreprocessor(Runnable[GameQuestion, dict]):
         else:
             return "general"
 
+
 class QuestionParser(Runnable[dict, ProcessedQuestion]):
     name: str = "Question_parser"
     
     def invoke(self, raw_dict: dict) -> ProcessedQuestion:
         return ProcessedQuestion(**raw_dict)
-    
+
+
+class PromptBuilder(Runnable[GameQuestion, PromptOutput]):
+    def invoke(self, data: GameQuestion) -> PromptOutput:
+
+        prompt = f"""
+            You are a helpful Steam game data analyst.
+
+            Use ONLY this dataset summary:
+            {data.dataset_summary}
+
+            Question:
+            {data.question}
+
+            Answer clearly and with numbers when possible.
+            """
+
+        return PromptOutput(prompt=prompt)
+
+
 class LLMRunner(Runnable[PromptOutput, dict]):
 
     def __init__(self, model_name: str = "HuggingFaceTB/SmolLM2-135M-Instruct"):
@@ -121,11 +131,13 @@ class LLMRunner(Runnable[PromptOutput, dict]):
 
         return {"response": response}
 
+
 def route_Question(Question: ProcessedQuestion) -> dict:
     return {
         "status": "routed",
         "Question_details": Question.model_dump(),
     }
+
 
 question_pipeline = (QuestionPreprocessor() | QuestionParser() | PromptBuilder() | LLMRunner())
 
@@ -135,5 +147,3 @@ incoming_question = GameQuestion(
     question="What is the latest games",
     dataset_summary={"Name": "Game A", "Release Year": 2025, "Genre": "*"}
 )
-
-# final_output = question_pipeline.invoke(incoming_question)
