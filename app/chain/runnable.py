@@ -1,54 +1,41 @@
-from typing import Any, Callable, Generic, TypeVar
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar, Callable, Any
 
-from pydantic import BaseModel, ConfigDict
 
 I = TypeVar("I")
-O = TypeVar("O")
 M = TypeVar("M")
+O = TypeVar("O")
 
-class Runnable(BaseModel, Generic[I, O]):
-    model_config = ConfigDict(arbitrary_types_allowed = True)
 
-    name: str |  None = None
+class Runnable(ABC, Generic[I, O]):
 
-    def invoke(self, data: I) -> O:
-        raise NotImplementedError("Subclasses is not implemented")
-    
-    def __or__(self, other: Any) -> 'RunnableSequence':
-        if isinstance(other, Runnable):
-            return runnableseSequence.model_construct(firts = self, second = other)
-        if callable(other):
-            return RunnableSequence.model_construct(
-                first = self,
-                second = RunnableLambda.model_construct(func = other, name = other.__name__),
-                name = other.__name__,
-            )
-        return NotImplemented
-    
-    def __ror__(self, other: Any) -> Any:
-        if callable(other):
-            return RunnableSequence.model_construct(
-                first = RunnableLambda.model_construct(func = other),
-                second = self,
-                name = other.__name__,
-            )
-        return NotImplemented
-    
+    @abstractmethod
+    def invoke(self, input: I) -> O:
+        pass
+
+    def __or__(self, other: "Runnable") -> "Runnable":
+        return RunnableSequence(self, other)
+
+
 class RunnableLambda(Runnable[I, O]):
-    func: Callable[[I], O]
 
-    def invoke(self, data: I) -> O:
-        return self.func(data)
-    
-class RunnableSequence(Runnable[I, O], Generic[I, M, O]):
-    func: callable[[I], M]
+    def __init__(self, func: Callable[[I], O]):
+        self.func = func
 
-    def invoke(self, data: I) -> O:
-        return self.func(data)
-    
-class RunnableSequence(Runnable[I, O], Generic[I, M, O]):
-    first: Any 
-    second: Any
-    
-    def invoke(self, data: I) -> O:
-        return self.second.invoke(self.first.invoke(data))
+    def invoke(self, input: I) -> O:
+        return self.func(input)
+
+
+class RunnableSequence(Generic[I, M, O], Runnable[I, O]):
+
+    def __init__(
+        self,
+        first: Runnable[I, M],
+        second: Runnable[M, O],
+    ):
+        self.first = first
+        self.second = second
+
+    def invoke(self, input: I) -> O:
+        intermediate: M = self.first.invoke(input)
+        return self.second.invoke(intermediate)
