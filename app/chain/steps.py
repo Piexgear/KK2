@@ -10,15 +10,22 @@ class PromptBuilder(
     def invoke(self, data: PromptBuilderInput) -> PromptBuilderOutput:
 
         prompt = f"""
-        Du är en hjälpsam assistent som hjälper användare att hitta information om spel som du får.
-        Användaren kommer att ställa frågor och du kommer att svara på dem så tydligt och informativt som möjligt. 
-        Ifall du inte vet svaret säg det är okänt istället för att gissa.
+        Du är en AI som svarar på frågor om ett dataset.
 
-        Svara endast på frågan baserat på informationen du har fått.
+        REGLER:
+        - Svara endast på frågan
+        - Använd endast statistiken
+        - Upprepa inte instruktioner
+        - Ingen metadata
+        - Inga extra frågor tillbaka
 
-        dataset: {data.stats}
-        Fråga: {data.question}
-        Svara kort och koncist.
+        DATASET:
+        {data.stats}
+
+        FRÅGA:
+        {data.question}
+
+        SVAR:
         """
         return PromptBuilderOutput(prompt=prompt)
     
@@ -26,7 +33,7 @@ class LLMRunner(
     Runnable[PromptBuilderOutput, LLMRunnerOutput]
 ):
     def invoke(self, data: PromptBuilderOutput) -> LLMRunnerOutput:
-        result = generator(data.prompt, max_new_tokens = 100, do_sample = False)
+        result = generator(data.prompt, max_new_tokens = 100, do_sample = False, return_full_text=False)
 
         return LLMRunnerOutput(response=result[0]['generated_text'], model="HuggingFaceTB/SmolLM2-135M-Instruct")
     
@@ -34,4 +41,10 @@ class ResponseParser(
     Runnable[LLMRunnerOutput, ResponseParserOutput]
 ):
     def invoke(self, data: LLMRunnerOutput) -> ResponseParserOutput:
-        return ResponseParserOutput(answer=data.response, model=data.model)
+
+        parsed_response = data.response.split("SVAR:")[-1]
+
+        if "Svara" in parsed_response:
+            parsed_response = parsed_response.split("Svara:")[-1]
+
+        return ResponseParserOutput(answer=parsed_response, model=data.model)
