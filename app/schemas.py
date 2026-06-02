@@ -28,7 +28,7 @@ class HealthResponse(BaseModel):
 
 class PromptBuilderInput(BaseModel):
     question: str
-    stats: dict[str, dict[str, Any]]
+    stats: str
 
 
 class PromptBuilderOutput(BaseModel):
