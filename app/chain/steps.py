@@ -1,6 +1,6 @@
 from transformers import pipeline
 from app.schemas import PromptBuilderInput, PromptBuilderOutput, LLMRunnerOutput, ResponseParserOutput
-from runnable import Runnable
+from .runnable import Runnable
 
 generator = pipeline("text-generation", model="HuggingFaceTB/SmolLM2-135M-Instruct")
 
@@ -14,7 +14,9 @@ class PromptBuilder(
         Användaren kommer att ställa frågor och du kommer att svara på dem så tydligt och informativt som möjligt. 
         Ifall du inte vet svaret säg det är okänt istället för att gissa.
 
-        dataset: {data.dataset}
+        Svara endast på frågan baserat på informationen du har fått.
+
+        dataset: {data.stats}
         Fråga: {data.question}
         Svara kort och koncist.
         """
@@ -32,4 +34,4 @@ class ResponseParser(
     Runnable[LLMRunnerOutput, ResponseParserOutput]
 ):
     def invoke(self, data: LLMRunnerOutput) -> ResponseParserOutput:
-        return ResponseParserOutput(answer=data.response)
+        return ResponseParserOutput(answer=data.response, model=data.model)

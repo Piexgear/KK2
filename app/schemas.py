@@ -36,7 +36,7 @@ class PromptBuilderOutput(BaseModel):
 
 
 class LLMRunnerOutput(BaseModel):
-    raw_response: str
+    response: str
     model: str
 
 
