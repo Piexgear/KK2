@@ -14,7 +14,14 @@ def upload(file: UploadFile = File(...)):
     if not file.filename.endswith(".csv"):
         raise HTTPException(400, "Only CSV files allowed")
 
-    df = pd.read_csv(file.file)
+    df = pd.read_csv(file.file, engine="python", sep=",", quotechar='"', index_col=False)
+    df.columns = df.columns.str.strip()
+
+    df = df.reset_index(drop=True)
+
+    df["Price"] = pd.to_numeric(df["Price"], errors='coerce')
+    df = df.dropna(subset=["Name","Price"])
+    df = df[df["Name"].str.len() > 1]
 
     store.save(df)
 
@@ -30,9 +37,21 @@ def ask(req: AskRequest):
     if not store.has_data():
         raise HTTPException(status_code=400, detail="No dataset uploaded")
 
+    question = req.question.lower()
+
     df = store.get()
 
-    stats = df["Name"].value_counts().to_string()
+    if "dyraste" in question:
+        row = df.loc[df["Price"].fillna(-1).idxmax()]
+        answer = f"{row['Name']} är det dyraste spelet med pris {row['Price']}$."
+        
+        return AskResponse(
+            question=req.question,
+            answer=answer,
+            model="rule-based"
+        )
+    
+    stats = df[["Name", "Price"]].head(30).to_string(index=False)
 
     chain_input = PromptBuilderInput(
         question=req.question,
@@ -55,8 +74,8 @@ def stats():
 
     df = store.get()
 
-    stats = df.describe(include="all").replace({np.nan: None}).to_string()
-    return {"stats": stats}
+    most_expensive = df.loc[df["Price"] == df["Price"].max()].iloc[0]
+    return {"name": str(most_expensive["Name"]), "price": int(most_expensive["Price"])}
 
 
 @app.get("/health")

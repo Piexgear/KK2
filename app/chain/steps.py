@@ -10,14 +10,15 @@ class PromptBuilder(
     def invoke(self, data: PromptBuilderInput) -> PromptBuilderOutput:
 
         prompt = f"""
-        Du är en AI som svarar på frågor om ett dataset.
+        Du är en strikt dataanalys-assistent.
 
-        REGLER:
-        - Svara endast på frågan
-        - Använd endast statistiken
-        - Upprepa inte instruktioner
-        - Ingen metadata
-        - Inga extra frågor tillbaka
+        Du får ENDAST använda informationen i DATASET.
+
+        Regler:
+        - Svara på svenska
+        - Svara kort (max 1 mening)
+        - Om svaret finns i statistiken, använd det
+        - Hitta inte på nya frågor eller resonemang
 
         DATASET:
         {data.stats}
@@ -25,7 +26,7 @@ class PromptBuilder(
         FRÅGA:
         {data.question}
 
-        SVAR:
+        SVAR (endast svaret):
         """
         return PromptBuilderOutput(prompt=prompt)
     
@@ -33,7 +34,7 @@ class LLMRunner(
     Runnable[PromptBuilderOutput, LLMRunnerOutput]
 ):
     def invoke(self, data: PromptBuilderOutput) -> LLMRunnerOutput:
-        result = generator(data.prompt, max_new_tokens = 100, do_sample = False, return_full_text=False)
+        result = generator(data.prompt, max_new_tokens = 40, do_sample = False)
 
         return LLMRunnerOutput(response=result[0]['generated_text'], model="HuggingFaceTB/SmolLM2-135M-Instruct")
     
