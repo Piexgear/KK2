@@ -72,3 +72,8 @@ KK2 är en FastAPI-baserad applikation designad för att ladda upp, processa och
 *   **Data:** Pandas & NumPy
 *   **AI-modell:** HuggingFace `SmolLM2-135M-Instruct`
 *   **Server:** Uvicorn
+
+### Testing
+
+1. För att starta tester så kör commandot förutsatt att du står i root directory: 
+uv run pytest app/tests/ -v
