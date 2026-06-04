@@ -71,3 +71,32 @@ def test_prompt_builder_input():
 
     assert "Vilket är det dyraste spelet?" in result.prompt
     assert "Tetris" in result.prompt
+
+
+def test_ai_mock(monkeypatch):
+
+    class FakeResult:
+        answer = "Tetris är billigast"
+        model = "mock"
+
+    def fake_invoke(input):
+        return FakeResult()
+
+    monkeypatch.setattr(
+        "app.chain.pipeline.chain.invoke",
+        fake_invoke
+    )
+
+    csv = "Name,Price\nTetris,10\nElden Ring,60\n"
+
+    client.post(
+        "/data/upload",
+        files={"file": ("games.csv", csv, "text/csv")}
+    )
+
+    response = client.post(
+        "/ai/ask",
+        json={"question": "Vilket är billigast?"}
+    )
+
+    assert response.json()["answer"] == "Tetris är billigast"
