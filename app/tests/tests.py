@@ -16,6 +16,13 @@ def test_upload_invalid_file():
     assert response.status_code == 400
     assert response.json() == {"detail": "Only CSV files allowed"}
 
+
+def test_stats_without_data():
+    response = client.get("/data/stats")
+    assert response.status_code == 404
+    assert response.json() == {"detail": "No dataset uploaded"}
+
+
 def test_upload_valid_file():
     
     csv = "Name,Price\nElden ring,10\nTetris,20\n"
@@ -26,3 +33,7 @@ def test_upload_valid_file():
     data = response.json()
     assert data["rows"] == 2
     assert data["columns"] == ["Name", "Price"]
+
+def test_stats_with_data():
+    response = client.get("/data/stats")
+    assert response.status_code == 200
