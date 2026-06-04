@@ -1,6 +1,3 @@
-from app.tests.conftest import client, uploaded_data
-
-
 def test_ai_mock(client, uploaded_data, monkeypatch):
 
     class FakeResult:

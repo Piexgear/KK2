@@ -1,10 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
-
 from app.main import app
-from app import data
-from app.chain.steps import PromptBuilder
-from app.schemas import PromptBuilderInput
+from app.data import store
 
 
 @pytest.fixture
@@ -14,9 +11,9 @@ def client():
 
 @pytest.fixture(autouse=True)
 def reset_store():
-    data.store.df = None
+    store._df = None
     yield
-    data.store.df = None
+    store._df = None
 
 
 @pytest.fixture

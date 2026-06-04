@@ -11,6 +11,8 @@ class DataStore:
         return self._df
     
     def has_data(self) -> bool:
-        return self._df is not None
+        return self._df is not None and not self._df.empty
     
+    def clear(self):
+        self._df = None
 store = DataStore()
