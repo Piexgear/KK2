@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
+from app.chain.steps import PromptBuilder
+from app.schemas import PromptBuilderInput
 
 client = TestClient(app)
 
@@ -58,3 +60,14 @@ def test_ask_with_data_wrong_game():
     assert response.status_code == 200
     data = response.json()
     assert "Elden ring" not in data["answer"]
+
+
+def test_prompt_builder_input():
+    input = PromptBuilderInput(
+        question="Vilket är det dyraste spelet?",
+        stats="Name Price\nTetris 20")
+    
+    result = PromptBuilder().invoke(input)
+
+    assert "Vilket är det dyraste spelet?" in result.prompt
+    assert "Tetris" in result.prompt
